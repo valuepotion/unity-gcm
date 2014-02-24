@@ -25,3 +25,6 @@ public class UnityGCMBroadcastReceiver extends GCMBroadcastReceiver {
 		return SERVICE_NAME;
 	}
 }
+
+
+

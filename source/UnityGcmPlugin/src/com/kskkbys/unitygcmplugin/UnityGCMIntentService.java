@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.gcm.GCMBaseIntentService;
+import com.valuepotion.sdk.ValuePotion;
 
 /**
  * GCMIntentService.<br>
@@ -29,6 +30,7 @@ public class UnityGCMIntentService extends GCMBaseIntentService {
 	
 	private static final String ON_DELETE_MESSAGES = "OnDeleteMessages";
 
+	
 	@Override
 	protected void onError(Context context, String errorId) {
 		Log.v(TAG, "onError");
@@ -40,54 +42,62 @@ public class UnityGCMIntentService extends GCMBaseIntentService {
 		Log.v(TAG, "onMessage");
 		// Notify to C# layer
 		Bundle bundle = intent.getExtras();
-		Set<String> keys = bundle.keySet();
-		JSONObject json = new JSONObject();
-		try {
-			for (String key : keys) {
-				Log.v(TAG, key + ": " + bundle.get(key));
-				json.put(key, bundle.get(key));
-			}
-			Util.sendMessage(ON_MESSAGE, json.toString());
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
 		
-		if (!Util.notificationsEnabled) {
-			return;
+		if(	ValuePotion.treatPushMessage(context, bundle) ){
+			// When treated by ValuePotion.
 		}
-		
-		// Show native notification view in status bar if defined fields are put.
-		String contentTitle;
-		try {
-			contentTitle = json.getString("content_title");
-			String contentText;
+		else{
+			Set<String> keys = bundle.keySet();
+			JSONObject json = new JSONObject();
 			try {
-				contentText = json.getString("content_text");
+				for (String key : keys) {
+					Log.v(TAG, key + ": " + bundle.get(key));
+					json.put(key, bundle.get(key));
+				}
+				Util.sendMessage(ON_MESSAGE, json.toString());
 			} catch (JSONException e) {
-				contentText = "";
+				e.printStackTrace();
 			}
-			String ticker;
+			
+			if (!Util.notificationsEnabled) {
+				return;
+			}
+			
+			// Show native notification view in status bar if defined fields are put.
+			String contentTitle;
 			try {
-				ticker = json.getString("ticker");
+				contentTitle = json.getString("content_title");
+				String contentText;
+				try {
+					contentText = json.getString("content_text");
+				} catch (JSONException e) {
+					contentText = "";
+				}
+				String ticker;
+				try {
+					ticker = json.getString("ticker");
+				} catch (JSONException e) {
+					ticker = contentTitle; // If no ticker specified, use title
+				}
+				UnityGCMNotificationManager.showNotification(this, contentTitle, contentText, ticker);
 			} catch (JSONException e) {
-				ticker = contentTitle; // If no ticker specified, use title
+				// Title is mandatory, do not display in status bar
+				Log.v(TAG, "No content_title specified, not showing anything in Android status bar");
 			}
-			UnityGCMNotificationManager.showNotification(this, contentTitle, contentText, ticker);
-		} catch (JSONException e) {
-			// Title is mandatory, do not display in status bar
-			Log.v(TAG, "No content_title specified, not showing anything in Android status bar");
 		}
 	}
 
 	@Override
 	protected void onRegistered(Context context, String registrationId) {
 		Log.v(TAG, "onRegistered");
+		ValuePotion.getInstance().registerPushToken(registrationId);
 		Util.sendMessage(ON_REGISTERED, registrationId);
 	}
 
 	@Override
 	protected void onUnregistered(Context context, String registrationId) {
 		Log.v(TAG, "onUnregistered");
+		ValuePotion.getInstance().registerPushToken(null);
 		Util.sendMessage(ON_UNREGISTERED, registrationId);
 	}
 	
