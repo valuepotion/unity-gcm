@@ -24,6 +24,7 @@ public class UnityGCMRegister {
 		GCMRegistrar.checkDevice(activity);
 		GCMRegistrar.checkManifest(activity);
 		String[] senderIdArray = senderIds.split(",");
+		UnityGCMIntentService.senderIdArray = senderIdArray;
 		GCMRegistrar.register(activity, senderIdArray);
 	}
 	

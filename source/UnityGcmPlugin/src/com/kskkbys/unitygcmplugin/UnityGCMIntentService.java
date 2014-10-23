@@ -30,6 +30,12 @@ public class UnityGCMIntentService extends GCMBaseIntentService {
 	
 	private static final String ON_DELETE_MESSAGES = "OnDeleteMessages";
 
+	public static String[] senderIdArray;
+
+	@Override
+	protected String[] getSenderIds(Context context) {
+		return senderIdArray;
+	}
 	
 	@Override
 	protected void onError(Context context, String errorId) {
